@@ -1,0 +1,2 @@
+// Deactivate User
+export {};
