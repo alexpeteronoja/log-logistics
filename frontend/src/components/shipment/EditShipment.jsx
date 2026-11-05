@@ -7,84 +7,100 @@ import { useEditShipmentStore } from "../../zustandStores/openModalStore";
 import { useEffect } from "react";
 
 function EditShipment() {
-    const { updateShipmentMutateAsync, updateShipmentPending } = useUpdateShipment();
-    const { closeEditShipmentStore, editShipmentStore } = useEditShipmentStore();
-    
-    const { register, handleSubmit, formState: { isSubmitting }, reset, watch } = useForm({
-        defaultValues: {
-            category: "General",
-            carrier: "swiftex",
+  const { updateShipmentMutateAsync, updateShipmentPending } =
+    useUpdateShipment();
+  const { closeEditShipmentStore, editShipmentStore } = useEditShipmentStore();
+
+  const {
+    register,
+    handleSubmit,
+    formState: { isSubmitting },
+    reset,
+    watch,
+  } = useForm({
+    defaultValues: {
+      category: "General",
+      carrier: "swiftex",
+    },
+  });
+
+  const selectedCarrier = watch("carrier");
+
+  useEffect(() => {
+    if (editShipmentStore) {
+      reset({
+        carrier: editShipmentStore.carrier || "swiftex",
+        carrierTrackingNumber: editShipmentStore.carrierTrackingNumber || "",
+        senderName: editShipmentStore.senderName,
+        senderPhoneNo: editShipmentStore.senderPhoneNo,
+        senderAddress: editShipmentStore.senderAddress,
+        recipientName: editShipmentStore.recipientName,
+        recipientPhoneNo: editShipmentStore.recipientPhoneNo,
+        recipientEmail: editShipmentStore.recipientEmail,
+        recipientAddress: editShipmentStore.recipientAddress,
+        packageDescription: editShipmentStore.packageDescription,
+        packageLocation: editShipmentStore.packageLocation,
+        weight: editShipmentStore.weight,
+        category: editShipmentStore.category,
+        // estimatedDelivery might be a string from backend, slice to 10 for date input
+        estimatedDelivery: editShipmentStore.estimatedDelivery
+          ? String(editShipmentStore.estimatedDelivery).substring(0, 10)
+          : "",
+      });
+    }
+  }, [reset, editShipmentStore]);
+
+  const onSubmit = async (data) => {
+    try {
+      // Note: The backend update controller accepts flat keys and maps them to metadata internally!
+      // Let's send it flat as the backend expects (per my update controller implementation).
+      // Wait, I implemented the update controller to accept flat fields: req.body.senderName -> metadata.sender.name.
+      // So we can just send data directly!
+      await updateShipmentMutateAsync({
+        shipmentId:
+          editShipmentStore?.trackingCode ||
+          editShipmentStore?.internalTrackingId,
+        data: {
+          carrier: data.carrier,
+          carrierTrackingNumber: data.carrierTrackingNumber,
+          senderName: data.senderName,
+          senderPhoneNo: data.senderPhoneNo,
+          senderAddress: data.senderAddress,
+          recipientName: data.recipientName,
+          recipientPhoneNo: data.recipientPhoneNo,
+          recipientEmail: data.recipientEmail,
+          recipientAddress: data.recipientAddress,
+          packageDescription: data.packageDescription,
+          packageLocation: data.packageLocation,
+          weight: data.weight,
+          category: data.category,
+          estimatedDelivery: data.estimatedDelivery,
         },
-    });
+      });
+      notifySuccess("Shipment Updated Succesfully");
+      reset();
+      closeEditShipmentStore();
+    } catch (err) {
+      if (axios.isAxiosError(err)) {
+        notifyError(err.response?.data?.error?.message);
+      } else {
+        console.log(err);
+      }
+    }
+  };
 
-    const selectedCarrier = watch("carrier");
-
-    useEffect(() => {
-        if (editShipmentStore) {
-            reset({
-                carrier: editShipmentStore.carrier || "swiftex",
-                carrierTrackingNumber: editShipmentStore.carrierTrackingNumber || "",
-                senderName: editShipmentStore.senderName,
-                senderPhoneNo: editShipmentStore.senderPhoneNo,
-                senderAddress: editShipmentStore.senderAddress,
-                recipientName: editShipmentStore.recipientName,
-                recipientPhoneNo: editShipmentStore.recipientPhoneNo,
-                recipientEmail: editShipmentStore.recipientEmail,
-                recipientAddress: editShipmentStore.recipientAddress,
-                packageDescription: editShipmentStore.packageDescription,
-                packageLocation: editShipmentStore.packageLocation,
-                weight: editShipmentStore.weight,
-                category: editShipmentStore.category,
-                // estimatedDelivery might be a string from backend, slice to 10 for date input
-                estimatedDelivery: editShipmentStore.estimatedDelivery ? String(editShipmentStore.estimatedDelivery).substring(0, 10) : "",
-            });
-        }
-    }, [reset, editShipmentStore]);
-
-    const onSubmit = async (data) => {
-        try {
-            // Note: The backend update controller accepts flat keys and maps them to metadata internally!
-            // Let's send it flat as the backend expects (per my update controller implementation).
-            // Wait, I implemented the update controller to accept flat fields: req.body.senderName -> metadata.sender.name.
-            // So we can just send data directly!
-            await updateShipmentMutateAsync({
-                shipmentId: editShipmentStore?.trackingCode || editShipmentStore?.internalTrackingId,
-                data: {
-                    carrier: data.carrier,
-                    carrierTrackingNumber: data.carrierTrackingNumber,
-                    senderName: data.senderName,
-                    senderPhoneNo: data.senderPhoneNo,
-                    senderAddress: data.senderAddress,
-                    recipientName: data.recipientName,
-                    recipientPhoneNo: data.recipientPhoneNo,
-                    recipientEmail: data.recipientEmail,
-                    recipientAddress: data.recipientAddress,
-                    packageDescription: data.packageDescription,
-                    packageLocation: data.packageLocation,
-                    weight: data.weight,
-                    category: data.category,
-                    estimatedDelivery: data.estimatedDelivery,
-                },
-            });
-            notifySuccess("Shipment Updated Succesfully");
-            reset();
-            closeEditShipmentStore();
-        } catch (err) {
-            if (axios.isAxiosError(err)) {
-                notifyError(err.response?.data?.message);
-            } else {
-                console.log(err);
-            }
-        }
-    };
-
-    return (<>
+  return (
+    <>
       {/* Modal */}
-      {editShipmentStore && (<div className="pt-24 pb-10 ml-0 lg:ml-71 px-4 md:px-8.5 bg-background text-textcol min-h-dvh">
+      {editShipmentStore && (
+        <div className="pt-24 pb-10 ml-0 lg:ml-71 px-4 md:px-8.5 bg-background text-textcol min-h-dvh">
           <div className="bg-white w-full p-6 relative rounded-md">
             {/* Close Button */}
-            <button onClick={closeEditShipmentStore} className="absolute right-4 top-4 cursor-pointer text-gray-500 hover:text-black">
-              <X size={22}/>
+            <button
+              onClick={closeEditShipmentStore}
+              className="absolute right-4 top-4 cursor-pointer text-gray-500 hover:text-black"
+            >
+              <X size={22} />
             </button>
 
             <h2 className="text-2xl font-semibold mb-6">Edit Shipment</h2>
@@ -92,7 +108,9 @@ function EditShipment() {
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-8">
               {/* ================= CARRIER ================= */}
               <div>
-                <h3 className="text-lg font-semibold mb-3">Carrier Information</h3>
+                <h3 className="text-lg font-semibold mb-3">
+                  Carrier Information
+                </h3>
 
                 <select {...register("carrier")} className="input">
                   <option value="swiftex">Internal / SwiftEx</option>
@@ -115,11 +133,23 @@ function EditShipment() {
                   Sender Information
                 </h3>
 
-                <input {...register("senderName", { required: true })} placeholder="Sender Full Name" className="input"/>
+                <input
+                  {...register("senderName", { required: true })}
+                  placeholder="Sender Full Name"
+                  className="input"
+                />
 
-                <input {...register("senderPhoneNo", { required: true })} placeholder="Sender Phone Number" className="input mt-3"/>
+                <input
+                  {...register("senderPhoneNo", { required: true })}
+                  placeholder="Sender Phone Number"
+                  className="input mt-3"
+                />
 
-                <input {...register("senderAddress")} placeholder="Sender Address" className="input mt-3"/>
+                <input
+                  {...register("senderAddress")}
+                  placeholder="Sender Address"
+                  className="input mt-3"
+                />
               </div>
 
               {/* ================= RECIPIENT ================= */}
@@ -128,13 +158,29 @@ function EditShipment() {
                   Recipient Information
                 </h3>
 
-                <input {...register("recipientName", { required: true })} placeholder="Recipient Full Name" className="input"/>
+                <input
+                  {...register("recipientName", { required: true })}
+                  placeholder="Recipient Full Name"
+                  className="input"
+                />
 
-                <input {...register("recipientPhoneNo", { required: true })} placeholder="Recipient Phone Number" className="input mt-3"/>
+                <input
+                  {...register("recipientPhoneNo", { required: true })}
+                  placeholder="Recipient Phone Number"
+                  className="input mt-3"
+                />
 
-                <input {...register("recipientEmail")} placeholder="Recipient Email" className="input mt-3"/>
+                <input
+                  {...register("recipientEmail")}
+                  placeholder="Recipient Email"
+                  className="input mt-3"
+                />
 
-                <input {...register("recipientAddress", { required: true })} placeholder="Recipient Address" className="input mt-3"/>
+                <input
+                  {...register("recipientAddress", { required: true })}
+                  placeholder="Recipient Address"
+                  className="input mt-3"
+                />
               </div>
 
               {/* ================= PACKAGE ================= */}
@@ -143,11 +189,24 @@ function EditShipment() {
                   Package Information
                 </h3>
 
-                <textarea {...register("packageDescription", { required: true })} placeholder="Package description" className="input"/>
+                <textarea
+                  {...register("packageDescription", { required: true })}
+                  placeholder="Package description"
+                  className="input"
+                />
 
-                <input {...register("packageLocation", { required: true })} placeholder="Package Location" className="input mt-3"/>
+                <input
+                  {...register("packageLocation", { required: true })}
+                  placeholder="Package Location"
+                  className="input mt-3"
+                />
 
-                <input type="number" {...register("weight", { valueAsNumber: true })} placeholder="Weight (kg)" className="input mt-3"/>
+                <input
+                  type="number"
+                  {...register("weight", { valueAsNumber: true })}
+                  placeholder="Weight (kg)"
+                  className="input mt-3"
+                />
 
                 <select {...register("category")} className="input mt-3">
                   <option value="General">General</option>
@@ -166,23 +225,41 @@ function EditShipment() {
                   Delivery Timeline
                 </h3>
 
-                <input type="date" {...register("estimatedDelivery")} className="input"/>
+                <input
+                  type="date"
+                  {...register("estimatedDelivery")}
+                  className="input"
+                />
               </div>
 
               {/* ================= BUTTONS ================= */}
               <div className="flex justify-end gap-3 pt-4">
-                <button type="button" onClick={closeEditShipmentStore} className="border px-5 py-2 rounded-md cursor-pointer">
+                <button
+                  type="button"
+                  onClick={closeEditShipmentStore}
+                  className="border px-5 py-2 rounded-md cursor-pointer"
+                >
                   Cancel
                 </button>
 
-                <button type="submit" disabled={isSubmitting} className="bg-primary text-white px-5 py-2 rounded-md flex justify-center items-center cursor-pointer">
-                  {updateShipmentPending ? (<Loader2 className="animate-spin duration-300"/>) : ("Update Shipment")}
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="bg-primary text-white px-5 py-2 rounded-md flex justify-center items-center cursor-pointer"
+                >
+                  {updateShipmentPending ? (
+                    <Loader2 className="animate-spin duration-300" />
+                  ) : (
+                    "Update Shipment"
+                  )}
                 </button>
               </div>
             </form>
           </div>
-        </div>)}
-    </>);
+        </div>
+      )}
+    </>
+  );
 }
 
 export default EditShipment;
