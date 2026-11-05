@@ -72,6 +72,12 @@ async function create(req, res, next) {
   try {
     const data = createShipmentSchema.parse(req.body);
 
+    // operator cannot create shipment
+
+    if (req.user.role !== "admin" && req.user.role !== "coordinator") {
+      throw new AppError("Not authorized to create shipment.", 403);
+    }
+
     // Validate carrier is registered if not internal
     const supportedCarriers = listCarriers();
     if (
@@ -236,15 +242,15 @@ async function getById(req, res, next) {
     }
 
     // Access control: owner or admin
-    if (
-      req.user.role !== "admin" &&
-      shipment.owner.toString() !== req.user._id.toString()
-    ) {
-      throw new AppError(
-        "You do not have permission to view this shipment.",
-        403,
-      );
-    }
+    // if (
+    //   req.user.role !== "admin" &&
+    //   shipment.owner.toString() !== req.user._id.toString()
+    // ) {
+    //   throw new AppError(
+    //     "You do not have permission to view this shipment.",
+    //     403,
+    //   );
+    // }
 
     // ── Freshness check for non-terminal shipments ──
     if (!TERMINAL_STATUSES.has(shipment.status)) {
@@ -313,7 +319,8 @@ async function manualPoll(req, res, next) {
  */
 async function getOverview(req, res, next) {
   try {
-    const filter = req.user.role === "admin" ? {} : { owner: req.user._id };
+    // const filter = req.user.role === "admin" ? {} : { owner: req.user._id };
+    const filter = {};
 
     const [total, delivered, inTransit, pending] = await Promise.all([
       Shipment.countDocuments(filter),
@@ -346,10 +353,16 @@ async function update(req, res, next) {
     if (!shipment) throw new AppError("Shipment not found.", 404);
 
     // Only admin can update shipment core fields in a real app, assuming admin here
-    if (
-      req.user.role !== "admin" &&
-      shipment.owner.toString() !== req.user._id.toString()
-    ) {
+    // if (
+    //   req.user.role !== "admin" &&
+    //   shipment.owner.toString() !== req.user._id.toString()
+    // ) {
+    //   throw new AppError("Not authorized to update this shipment.", 403);
+    // }
+
+    // Operator cannot edit shipment
+
+    if (req.user.role !== "admin" && req.user.role !== "coordinator") {
       throw new AppError("Not authorized to update this shipment.", 403);
     }
 
