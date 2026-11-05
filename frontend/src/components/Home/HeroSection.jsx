@@ -1,9 +1,26 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
 import { Search } from "lucide-react";
+import { notifyError } from "../../utils/toast";
+import { useNavigate } from "react-router-dom";
 
 export default function Hero() {
+  const navigate = useNavigate();
   const [trackingId, setTrackingId] = useState("");
+
+  const handleTracking = () => {
+    if (!trackingId.trim()) {
+      notifyError("Enter a Valid Tracking Code");
+      return;
+    }
+
+    const input = trackingId.trim().toLocaleUpperCase();
+
+    if (!input.startsWith("SWX")) {
+      notifyError("Invalid Tracking Code");
+      return;
+    }
+    navigate(`/track-parcel/${input}`);
+  };
 
   return (
     <section className="w-full md:p-6 lg:p-12.5 p-0 box-border">
@@ -84,12 +101,13 @@ export default function Hero() {
                 </div>
 
                 {/* Submit */}
-                <Link
-                  to={`/tracking${trackingId ? "?id=" + trackingId : ""}`}
-                  className="block w-full py-4 bg-[#e86b1c] text-white font-bold text-lg rounded-full text-center no-underline transition-all duration-300 shadow-[0_4px_20px_rgba(249,115,22,0.4)] box-border"
+                <button
+                  onClick={handleTracking}
+                  // to={`/track-parcel${trackingId ? "?id=" + trackingId : ""}`}
+                  className="block w-full cursor-pointer py-4 bg-[#e86b1c] text-white font-bold text-lg rounded-full text-center no-underline transition-all duration-300 shadow-[0_4px_20px_rgba(249,115,22,0.4)] box-border"
                 >
                   Get tracking update
-                </Link>
+                </button>
               </div>
             </div>
           </div>
