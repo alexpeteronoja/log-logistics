@@ -1,6 +1,13 @@
 const User = require('../models/User');
 const AppError = require('../utils/AppError');
 
+// ── Demo Accounts ──────────────────────────────────
+const DEMO_EMAILS = [
+  'admin@swiftex.local',
+  'operator@swiftex.local',
+  'coordinator@swiftex.local',
+];
+
 /**
  * GET /users — list all users (admin only)
  */
@@ -28,6 +35,10 @@ async function toggleStatus(req, res, next) {
     const user = await User.findById(id);
     if (!user) throw new AppError('User not found.', 404);
 
+    if (DEMO_EMAILS.includes(user.email.toLowerCase())) {
+      throw new AppError('Modifying demo account status is not allowed.', 403);
+    }
+
     user.isActive = !user.isActive;
     await user.save();
 
@@ -46,8 +57,14 @@ async function remove(req, res, next) {
     if (id === req.user._id.toString()) {
       throw new AppError('Cannot delete yourself.', 400);
     }
-    const user = await User.findByIdAndDelete(id);
+    const user = await User.findById(id);
     if (!user) throw new AppError('User not found.', 404);
+
+    if (DEMO_EMAILS.includes(user.email.toLowerCase())) {
+      throw new AppError('Deleting demo accounts is not allowed.', 403);
+    }
+
+    await User.findByIdAndDelete(id);
 
     res.json({ success: true, message: 'User deleted successfully.' });
   } catch (err) {

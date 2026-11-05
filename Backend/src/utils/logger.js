@@ -1,11 +1,14 @@
-const pino = require('pino');
-const config = require('../config');
+const pino = require("pino");
+const config = require("../config");
 
 const logger = pino({
-  level: config.nodeEnv === 'production' ? 'info' : 'debug',
+  level: config.nodeEnv === "production" ? "info" : "debug",
   transport:
-    config.nodeEnv !== 'production'
-      ? { target: 'pino-pretty', options: { colorize: true, translateTime: 'SYS:standard' } }
+    config.nodeEnv !== "production"
+      ? {
+          target: "pino-pretty",
+          options: { colorize: true, translateTime: "SYS:standard" },
+        }
       : undefined,
 });
 
